@@ -1,9 +1,8 @@
 import streamlit as st
-from back.filter import filter
 
 class specs:
-    def __init__(self):
-        self.filter = filter()
+    def __init__(self, f):
+        self.filter = f
     
     def get_mag_unit(self):
         return st.session_state.get("mag-unit")

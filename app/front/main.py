@@ -1,19 +1,16 @@
 import streamlit as st
 import pandas as pd
 import math as m
-from front.plot import plotter
-from back.spec import specs
 
-def render_sidebar():
-    """Renders Side Bar"""
-    with st.sidebar:
-        st.title("")
-        st.markdown("")
-        st.selectbox("Filter Type", ["FIR", "IIR"], key='f-type')
+def render_type(border=True, height="stretch", width="stretch"):
+    """Renders filter type."""
+    with st.container(border=border, height=height, width=width):
+        st.subheader("Filter Type")
+        st.selectbox("Filter Type", ["FIR", "IIR"], key='f-type', label_visibility="hidden")
 
-def render_options(border=True):
+def render_options(border=True, height="stretch", width="stretch"):
     """Renders options selection."""
-    with st.container(border=border):
+    with st.container(border=border, height=height, width=width):
         st.subheader("Options")
         dm = st.session_state.get("design-method")
         if dm == "Window":
@@ -71,9 +68,9 @@ def render_options(border=True):
         else:
             raise ValueError("Design Method not supported")
 
-def render_dm(border=True):
+def render_dm(border=True, height="stretch", width="stretch"):
     """Renders design method."""
-    with st.container(border=border):
+    with st.container(border=border, height=height, width=width):
         st.subheader("Design Method")
         f_type = st.session_state.get("f-type")
         if f_type == "FIR":
@@ -89,21 +86,42 @@ def render_dm(border=True):
         else:
             raise ValueError("Filter type can either be FIR or IIR")
 
-def render_plot(border=True):
+def render_plot(plt, border=True, height="stretch", width="stretch"):
     """Renders Frequency Response using Plotly"""
-    s = specs()
-    freq_rsp = plotter(s)
-    with st.container(border=border):
+    freq_rsp = plt
+    with st.container(border=border, height=height, width=width):
         st.subheader("Frequency Response")
         freq_rsp.update()
         freq_rsp.render()
 
-def render_graph_settings(border=True):
-    """Renders Graph Settings"""
-    st.slider("worN", min_value=512, max_value=2048, value=512, key='worN')
-    st.selectbox("Magnitude Unit", ["RAW", "dB"], key='mag-unit')
+def render_plot_param(border=True, height="stretch", width="stretch"):
+    """Renders Plot Parameters"""
+    with st.container(border=border, height=height, width=width):
+        st.subheader("Plot Parameters")
+        st.slider("worN", min_value=512, max_value=2048, value=512, key='worN')
+        st.selectbox("Magnitude Unit", ["RAW", "dB"], key='mag-unit')
 
-def render_summary(border=True):
+def render_summary(border=True, height="stretch", width="stretch"):
     """Renders Summary."""
-    with st.container(border=border):
+    with st.container(border=border, height=height, width=width):
         st.subheader("Summary")
+
+def render_taps(taps, border=True, height="stretch", width="stretch"):
+    """Renders Taps"""
+    with st.container(border=border, height=height, width=width):
+        st.subheader("Coefficients")
+        st.code(taps, "python", wrap_lines=True, height=300)
+
+def render_taps_param(border=True, height="stretch", width="stretch"):
+    """Renders Taps"""
+    with st.container(border=border, height=height, width=width):
+        st.subheader("Coef Format")
+        taps_fmt = st.selectbox("Numerical Representation", ["float", "fixed", "csd", "raw"], key="taps-num_rep")
+        if taps_fmt != "float":
+            width = st.slider("Total Bits", min_value=1, max_value=128, value=16, key="taps-width")
+            frac = st.slider("Fractional Bits", min_value=0, max_value=width, value=15, key="taps-frac")
+            if taps_fmt in ["fixed", "raw"]:
+                out_fmt = st.selectbox("Output Format", ["Dec", "Bin", "Hex"], key="taps-out_fmt")
+            else:
+                out_fmt = None
+        

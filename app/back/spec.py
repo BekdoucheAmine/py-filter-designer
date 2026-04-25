@@ -11,7 +11,6 @@ class specs:
         return st.session_state.get("worN")
 
     def get_fs(self):
-        self.filter.set_function(st.session_state.get("design-method"))
         dm = st.session_state.get("design-method")
         if dm == "Window":
             return st.session_state.get("window-fs")

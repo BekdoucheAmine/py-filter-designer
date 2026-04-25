@@ -195,4 +195,4 @@ class plotter:
         #                         self.specs.get_a1(),
         #                         self.specs.get_resp_type())
     def render(self):
-        st.plotly_chart(self.fig)
+        st.plotly_chart(self.fig, height="stretch", width="stretch")

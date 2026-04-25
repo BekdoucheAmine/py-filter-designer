@@ -29,14 +29,15 @@ class plotter:
         # add line
         self.fig.add_shape(
             type="line",
-            x0=x0, y0=y0+self.pad,
-            x1=x1, y1=y1+self.pad,
+            x0=x0, y0=y0,
+            x1=x1, y1=y1,
             line=dict(color="black", dash="dash", width=1)
         )
         # add text
         self.fig.add_annotation(
-            x=(x0+x1)/2, y=y0+self.pad,
+            x=(x0+x1)/2, y=y0,
             text=txt,
+            yshift=self.pad,
             showarrow=False,
             font=dict(color="black")
         )
@@ -62,25 +63,7 @@ class plotter:
             showarrow=False,
             font=dict(color="black")
         )
-    def __add_freq_marker(self, f, txt):
-        """
-            f: frequency, draws a vertical line at this magnitude
-            txt: string, placed at the top of the vertical line
-        """
-        self.__add_line_marker(f, np.max(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.max(self.h),
-                               f, np.min(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.min(self.h),
-                               txt)    
-    def __add_mag_marker(self, a, f0, f1, txt):
-        """
-            a: magnitude, draws a horizontal line from f0,f1 at this magnitude
-            f0: start frequency
-            f1: stop frequency
-            txt: string, placed at the center of the line with vertical pads
-        """
-        self.__add_line_marker(f0, a,
-                               f1, a,
-                               txt)       
-    def _add_region_marker(self, f0, f1, a0, a1, mode):
+    def _add_region_marker(self):
         """
             f0, f1: frequency
             a0, a1: magnitude 
@@ -88,88 +71,77 @@ class plotter:
             color: fill color (string)
             mode: "lowpass", "highpass", "bandpass", "bandstop"
         """
-        if mode == "lowpass":
-            # pass region
-            self._add_freq_marker(f0, "Fpass")
-            self._add_mag_marker(a0/2.0, np.min(self.w), f0, "Apass")
-            self._add_mag_marker(-a0/2.0, np.min(self.w), f0, "")
-            self.__add_rect_marker(np.min(self.w), a0/2.0,
-                                   f0, -a0/2.0,
-                                   "green",
-                                   "")
-            # stop region
-            self._add_freq_marker(f1, "Fstop")
-            self._add_mag_marker(a1, f1, np.max(self.w), "Astop")
-            self.__add_rect_marker(f1, a1,
-                                   np.max(self.w), np.max(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.max(self.h),
-                                   "red",
-                                   "")
-        elif mode == "highpass":
-            # stop region
-            self._add_freq_marker(f0, "Fstop")
-            self._add_mag_marker(a0, np.min(self.w), f0, "Astop")
-            self.__add_rect_marker(np.min(self.w), np.min(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.min(self.h),
-                                   f0, a0,
-                                   "red",
-                                   "")
-            # pass region
-            self._add_freq_marker(f1, "Fpass")
-            self._add_mag_marker(a1/2.0, "Apass")
-            self._add_mag_marker(-a1/2.0, "")
-            self.__add_rect_marker(f1, a1/2.0,
-                                   np.max(self.w), -a1/2.0,
-                                   "green",
-                                   "")
-        elif mode == "bandpass":
-            # pass region
-            self._add_freq_marker(f0[0]-f0[1]/2.0, "Fpass")
-            self._add_freq_marker(f0[0]+f0[1]/2.0, "")
-            self._add_mag_marker(a0/2.0, f0[0]-f0[1]/2.0, f0[0]+f0[1]/2.0, "Apass")
-            self._add_mag_marker(-a0/2.0, f0[0]-f0[1]/2.0, f0[0]+f0[1]/2.0, "")
-            self.__add_rect_marker(f0[0]-f0[1]/2.0, a0/2.0,
-                                   f0[0]+f0[1]/2.0, -a0/2.0,
-                                   "green",
-                                   "")
-            # stop region
-            self._add_freq_marker(f1[0], "Fstop")
-            self._add_freq_marker(f1[1], "")
-            self._add_mag_marker(a1, np.min(self.w), f1[0], "Astop")
-            self._add_mag_marker(a1, f1[1], np.max(self.w), "")
-            self.__add_rect_marker(np.min(self.w), a1,
-                                   f1[0], np.min(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.min(self.h),
-                                   "red",
-                                   "")
-            self.__add_rect_marker(f1[0], a1,
-                                   np.max(self.w), np.min(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.min(self.h),
-                                   "red",
-                                   "")
+        dm = self.specs.get_dm()
+        param = self.specs.get_params()
+
+        if dm == "Window":
+            freqs = list(param[1]) # band frequencies
+            width = param[2] # transition width
+            pass_zero = param[4] # pass zero
             
-        elif mode == "bandstop":
-            # stop region
-            self._add_freq_marker(f0[0]-f0[1]/2.0, "Fstop")
-            self._add_freq_marker(f0[0]+f0[1]/2.0, "")
-            self._add_mag_marker(a0/2.0, f0[0]-f0[1]/2.0, f0[0]+f0[1]/2.0, "Astop")
-            self._add_mag_marker(-a0/2.0, f0[0]-f0[1]/2.0, f0[0]+f0[1]/2.0, "")
-            self.__add_rect_marker(f0[0]-f0[1]/2.0, a0/2.0,
-                                   f0[0]+f0[1]/2.0, -a0/2.0,
-                                   "red",
-                                   "")
-            
-            # pass region
-            self._add_freq_marker(f1[0], "Fpass")
-            self._add_freq_marker(f1[1], "")
-            self._add_mag_marker(a1, np.min(self.w), f1[0], "Apass")
-            self._add_mag_marker(a1, f1[1], np.max(self.w), "")
-            self.__add_rect_marker(np.min(self.w), a1,
-                                   f1[0], np.min(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.min(self.h),
-                                   "green",
-                                   "")
-            self.__add_rect_marker(f1[0], a1,
-                                   np.max(self.w), np.min(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.min(self.h),
-                                   "green",
-                                   "")
-        else:
-            raise ValueError("mode is a Literal, hence value can either be 'lowpass', 'highpass', 'bandpass', 'band_stop'")  
+            # magnitude regions
+            apass = np.max(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.max(self.h)
+            astop = np.max(self.mag_db)-6 if self.specs.get_mag_unit()=="dB" else np.max(self.h)*0.25
+            amin = np.min(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.min(self.h)
+            if pass_zero:
+                freqs.insert(0, np.min(self.w))
+            else:
+                self.__add_line_marker(np.min(self.w), astop,
+                                    freqs[0], astop,
+                                    "Astop")
+                self.__add_line_marker(np.min(self.w), amin,
+                                    freqs[0], amin,
+                                    "")
+                self.__add_rect_marker(np.min(self.w), astop,
+                                    freqs[0], amin,
+                                    "red",
+                                    "")
+            for i in range(len(freqs)):
+                if i < len(freqs)-1:
+                    if i%2 == 0:
+                        self.__add_line_marker(freqs[i], apass,
+                                            freqs[i+1], apass,
+                                            "Apass")
+                        self.__add_line_marker(freqs[i], astop,
+                                            freqs[i+1], astop,
+                                            "")
+                        self.__add_rect_marker(freqs[i], apass,
+                                            freqs[i+1], astop,
+                                            "green",
+                                            "")
+                    if i%2 == 1:
+                        self.__add_line_marker(freqs[i], astop,
+                                            freqs[i+1], astop,
+                                            "Astop")
+                        self.__add_line_marker(freqs[i], amin,
+                                            freqs[i+1], amin,
+                                            "")
+                        self.__add_rect_marker(freqs[i], astop,
+                                            freqs[i+1], amin,
+                                            "red",
+                                            "")
+                else:
+                    if i%2 == 0:
+                        self.__add_line_marker(freqs[i], apass,
+                                            np.max(self.w), apass,
+                                            "Apass")
+                        self.__add_line_marker(freqs[i], astop,
+                                            np.max(self.w), astop, "")
+                        self.__add_rect_marker(freqs[i], apass,
+                                            np.max(self.w), astop,
+                                            "green",
+                                            "")
+                    if i%2 == 1:
+                        self.__add_line_marker(freqs[i], astop,
+                                            np.max(self.w), astop,
+                                            "Astop")
+                        self.__add_line_marker(freqs[i], amin,
+                                            np.max(self.w), amin,
+                                            "")
+                        self.__add_rect_marker(freqs[i], astop,
+                                            np.max(self.w), amin,
+                                            "red",
+                                            "")
     def _add_freq_response(self):
         """
             add frequency response trace to the figure (self.fig)
@@ -184,15 +156,13 @@ class plotter:
     def update(self):
         # remove all traces
         self.fig.data = []
+        self.fig.layout.shapes = []
+        self.fig.layout.annotations = []
         # recalculate frequency response
         self.__calc_freq_rsp()
         # add frequency response trace
         self._add_freq_response()
         # add annotations
-        # self._add_region_marker(self.specs.get_f0(),
-        #                         self.specs.get_f1(),
-        #                         self.specs.get_a0(),
-        #                         self.specs.get_a1(),
-        #                         self.specs.get_resp_type())
+        self._add_region_marker()
     def render(self):
         st.plotly_chart(self.fig, height="stretch", width="stretch")

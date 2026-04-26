@@ -80,68 +80,70 @@ class plotter:
             pass_zero = param[4] # pass zero
             
             # magnitude regions
-            apass = np.max(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.max(self.h)
-            astop = np.max(self.mag_db)-6 if self.specs.get_mag_unit()=="dB" else np.max(self.h)*0.25
-            amin = np.min(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.min(self.h)
+            apass_max = np.max(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.max(self.h)
+            apass_min = np.max(self.mag_db)-3 if self.specs.get_mag_unit()=="dB" else np.max(self.h)*0.5
+            astop_max = np.max(self.mag_db)-6 if self.specs.get_mag_unit()=="dB" else np.max(self.h)*0.25
+            astop_min = np.min(self.mag_db) if self.specs.get_mag_unit()=="dB" else np.min(self.h)
+
             if pass_zero:
                 freqs.insert(0, np.min(self.w))
             else:
-                self.__add_line_marker(np.min(self.w), astop,
-                                    freqs[0], astop,
-                                    "Astop")
-                self.__add_line_marker(np.min(self.w), amin,
-                                    freqs[0], amin,
+                self.__add_line_marker(np.min(self.w), astop_max,
+                                    freqs[0], astop_max,
                                     "")
-                self.__add_rect_marker(np.min(self.w), astop,
-                                    freqs[0], amin,
+                self.__add_line_marker(np.min(self.w), astop_min,
+                                    freqs[0], astop_min,
+                                    "")
+                self.__add_rect_marker(np.min(self.w), astop_max,
+                                    freqs[0], astop_min,
                                     "red",
-                                    "")
+                                    "Stop Band")
             for i in range(len(freqs)):
                 if i < len(freqs)-1:
                     if i%2 == 0:
-                        self.__add_line_marker(freqs[i], apass,
-                                            freqs[i+1], apass,
-                                            "Apass")
-                        self.__add_line_marker(freqs[i], astop,
-                                            freqs[i+1], astop,
+                        self.__add_line_marker(freqs[i], apass_max,
+                                            freqs[i+1], apass_max,
                                             "")
-                        self.__add_rect_marker(freqs[i], apass,
-                                            freqs[i+1], astop,
+                        self.__add_line_marker(freqs[i], apass_min,
+                                            freqs[i+1], apass_min,
+                                            "")
+                        self.__add_rect_marker(freqs[i], apass_max,
+                                            freqs[i+1], apass_min,
                                             "green",
-                                            "")
+                                            "Pass Band")
                     if i%2 == 1:
-                        self.__add_line_marker(freqs[i], astop,
-                                            freqs[i+1], astop,
-                                            "Astop")
-                        self.__add_line_marker(freqs[i], amin,
-                                            freqs[i+1], amin,
+                        self.__add_line_marker(freqs[i], astop_max,
+                                            freqs[i+1], astop_max,
                                             "")
-                        self.__add_rect_marker(freqs[i], astop,
-                                            freqs[i+1], amin,
+                        self.__add_line_marker(freqs[i], astop_min,
+                                            freqs[i+1], astop_min,
+                                            "")
+                        self.__add_rect_marker(freqs[i], astop_max,
+                                            freqs[i+1], astop_min,
                                             "red",
-                                            "")
+                                            "Stop Band")
                 else:
                     if i%2 == 0:
-                        self.__add_line_marker(freqs[i], apass,
-                                            np.max(self.w), apass,
-                                            "Apass")
-                        self.__add_line_marker(freqs[i], astop,
-                                            np.max(self.w), astop, "")
-                        self.__add_rect_marker(freqs[i], apass,
-                                            np.max(self.w), astop,
+                        self.__add_line_marker(freqs[i], apass_max,
+                                            np.max(self.w), apass_max,
+                                            "")
+                        self.__add_line_marker(freqs[i], apass_min,
+                                            np.max(self.w), apass_min, "")
+                        self.__add_rect_marker(freqs[i], apass_max,
+                                            np.max(self.w), apass_min,
                                             "green",
-                                            "")
+                                            "Pass Band")
                     if i%2 == 1:
-                        self.__add_line_marker(freqs[i], astop,
-                                            np.max(self.w), astop,
-                                            "Astop")
-                        self.__add_line_marker(freqs[i], amin,
-                                            np.max(self.w), amin,
+                        self.__add_line_marker(freqs[i], astop_max,
+                                            np.max(self.w), astop_max,
                                             "")
-                        self.__add_rect_marker(freqs[i], astop,
-                                            np.max(self.w), amin,
+                        self.__add_line_marker(freqs[i], astop_min,
+                                            np.max(self.w), astop_min,
+                                            "")
+                        self.__add_rect_marker(freqs[i], astop_max,
+                                            np.max(self.w), astop_min,
                                             "red",
-                                            "")
+                                            "Stop Band")
     def _add_freq_response(self):
         """
             add frequency response trace to the figure (self.fig)

@@ -6,7 +6,8 @@ def render_type(border=True, height="stretch", width="stretch"):
     """Renders filter type."""
     with st.container(border=border, height=height, width=width):
         st.subheader("Filter Type")
-        st.selectbox("Filter Type", ["FIR", "IIR"], key='f-type', label_visibility="hidden")
+        st.selectbox("Filter Type", ["FIR"], #, "IIR"], Not supported yet
+                      key='f-type', label_visibility="hidden")
 
 def render_options(border=True, height="stretch", width="stretch"):
     """Renders options selection."""
@@ -16,19 +17,19 @@ def render_options(border=True, height="stretch", width="stretch"):
         if dm == "Window":
             # default values
             if "window-numtaps" not in st.session_state:
-                st.session_state["window-numtaps"] = 9
+                st.session_state["window-numtaps"] = 29
             if "window-width" not in st.session_state:
-                st.session_state["window-width"] = None
+                st.session_state["window-width"] = 0.0001
             if "window-window" not in st.session_state:
                 st.session_state["window-window"] = 'hamming'
             if "window-pass_zero" not in st.session_state:
-                st.session_state["window-pass_zero"] = True
+                st.session_state["window-pass_zero"] = False
             if "window-scale" not in st.session_state:
                 st.session_state["window-scale"] = False
             if "window-fs" not in st.session_state:
                 st.session_state["window-fs"] = 1000
 
-            st.slider("Number of taps", min_value=1, max_value=128, value=9, step=1, key="window-numtaps",
+            st.slider("Number of taps", min_value=1, max_value=128, value=29, step=1, key="window-numtaps",
                       help= "Length of the filter (number of coefficients, i.e., the filter order + 1)"+\
                             ". numtaps must be odd if a passband includes the Nyquist frequency.")
 
@@ -58,7 +59,7 @@ def render_options(border=True, height="stretch", width="stretch"):
             st.checkbox("Pass Zero (DC)", value=False, key='window-pass_zero')
             st.checkbox("Scale Coefficients", value=False, key='window-scale')
             st.number_input("Sample Frequency",
-                            step=int(10**(m.ceil(m.log10(st.session_state.get("window-fs"))/3))), value=1000)
+                            step=int(10**(m.ceil(m.log10(st.session_state.get("window-fs"))/3))), value=1000, key="window-fs")
         elif dm == "Frequency Samping":
             pass
         elif dm == "Least Squares":
@@ -75,7 +76,7 @@ def render_dm(border=True, height="stretch", width="stretch"):
         f_type = st.session_state.get("f-type")
         if f_type == "FIR":
             st.selectbox("Design Method",
-                         ["Window", "Frequency Sampling", "Least Squares", "Equiripple/Minimax"],
+                         ["Window"], #, "Frequency Sampling", "Least Squares", "Equiripple/Minimax"], Not Supported Yet
                          key="design-method",
                          label_visibility="hidden")
         elif f_type == "IIR":

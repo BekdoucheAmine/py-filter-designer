@@ -20,15 +20,15 @@ def main():
     coef = taps(spec)
     
     with sidebar:
-        render_type()
-        render_dm()
+        render_type(border=False, width="content")
+        render_dm(border=False, width="content")
 
     with col1:
-        render_options()
+        render_options(height="content")
     with col3:
-        render_plot_param()
-        render_taps_param()
-        render_taps(coef.get_taps())
+        render_plot_param(height="content")
+        render_taps_param(height="content")
+        render_taps(coef.get_taps(), height="content")
     with col2:
         render_plot(plt)
 

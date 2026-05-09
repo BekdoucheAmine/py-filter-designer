@@ -32,7 +32,7 @@ class taps():
             out_fmt = st.session_state.get("taps-out_fmt")
             width = st.session_state.get("taps-width")
             frac = st.session_state.get("taps-frac")
-            taps = self.get_raw(out_fmt, width, frac)
+            taps = self.get_raw(out_fmt, width)
         else:
             raise ValueError("Numerical representations are limit to float, fixed, csd, raw")
         return taps
@@ -42,6 +42,7 @@ class taps():
         for tap in self.specs.get_taps():
             float_taps.append(float(tap))
         return float_taps
+
     def get_fixed(self, out_fmt, width, frac):
         """
             desc: convert taps to fixed point format
@@ -58,17 +59,16 @@ class taps():
             ival = int(round(tap * (2**frac)))
             if ival > (1 << (width - 1)) - 1 or ival < -(1 << (width - 1)):
                 ValueError("Conversion overflow, set a higher width")
-
-            if out_fmt == "dec":
+            if out_fmt == "Dec":
                 fix_taps.append(ival)
-            elif out_fmt == "bin":
+            elif out_fmt == "Bin":
                 fix_taps.append(np.binary_repr(ival, width=width))
-            elif out_fmt == "hex":
+            elif out_fmt == "Hex":
                 hex_width = (width + 3) // 4
-                fix_taps.append(format(ival & mask, f'0{hex_width}x')) 
+                fix_taps.append(format(ival & mask, f'0{hex_width}x'))
         return fix_taps
-    def to_csd(self, n, width):
 
+    def to_csd(self, n, width):
         res = ""
         temp_n = n
         for _ in range(width):
@@ -85,6 +85,7 @@ class taps():
                     temp_n //= 2
             res = digit + res
         return res
+
     def get_csd(self, width, frac):
         """
             desc: Converts taps to Canonical Signed Digit strings.
@@ -125,11 +126,11 @@ class taps():
         
         for tap in taps:
             ival = int(round(tap * scale_factor))
-            if out_fmt == "dec":
+            if out_fmt == "Dec":
                 raw_taps.append(ival)
-            elif out_fmt == "bin":
+            elif out_fmt == "Bin":
                 raw_taps.append(np.binary_repr(ival, width=width))
-            elif out_fmt == "hex":
+            elif out_fmt == "Hex":
                 hex_width = (width + 3) // 4
                 raw_taps.append(format(ival & mask, f'0{hex_width}x'))       
         return raw_taps

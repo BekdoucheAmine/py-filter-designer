@@ -120,9 +120,8 @@ def render_taps_param(border=True, height="stretch", width="stretch"):
         taps_fmt = st.selectbox("Numerical Representation", ["float", "fixed", "csd", "raw"], key="taps-num_rep")
         if taps_fmt != "float":
             width = st.slider("Total Bits", min_value=1, max_value=128, value=16, key="taps-width")
-            frac = st.slider("Fractional Bits", min_value=0, max_value=width, value=15, key="taps-frac")
+            if taps_fmt != "raw":
+                frac = st.slider("Fractional Bits", min_value=0, max_value=width, value=15, key="taps-frac")
             if taps_fmt in ["fixed", "raw"]:
                 out_fmt = st.selectbox("Output Format", ["Dec", "Bin", "Hex"], key="taps-out_fmt")
-            else:
-                out_fmt = None
         

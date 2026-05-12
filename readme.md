@@ -4,9 +4,9 @@ This repository contains a simple filter designer (built-with & hosted on stream
 
 ## Repository structure
 
-app: contains the streamlit app with all the source code
-docs: documentation (mainly how to use the app and how to improve it)
-tests: making sure that future edits doesn't break current functions through testcases
+app: contains the streamlit app with all the source code  
+docs: documentation (mainly how to use the app and how to improve it)  
+tests: making sure that future edits doesn't break current functions through testcases  
 
 ## Intended design
 

@@ -9,57 +9,111 @@ def render_type(border=True, height="stretch", width="stretch"):
         st.selectbox("Filter Type", ["FIR"], #, "IIR"], Not supported yet
                       key='f-type', label_visibility="hidden")
 
+def __render_options_window_window():
+    """
+    """
+    window = st.selectbox("Window", ["hamming", "barthann", "bartlett", "blackman",
+                                     "blackmanharris", "bohman", "boxcar", "chebwin",
+                                     "cosine", "dpss", "exponential", "flattop",
+                                     "gaussian", "general cosine", "general gaussian", "general hamming",
+                                     "hann", "kaiser", "kaiser bessel derived", "lanczos",
+                                     "nuttall", "parzen", "taylor", "triangle",
+                                     "tukey"], key="window-window")
+    if window == "chebwin":
+        st.number_input("Attenuation (dB)", key="window-window_chebwin_attenuation")
+    elif window == "dpss":
+        st.slider("Standardized half bandwidth", min_value=0.00001, max_value=st.session_state.get("window-numtaps")/2-0.0001, key="window-window_dpss_nw")
+    elif window == "exponential":
+        st.number_input("Tau", value=60, key="window-window_exponential_tau")
+    elif window == "gaussian":
+        st.number_input("Standard Deviation", value=10, key="window-window_gaussian_std")
+    elif window == "general cosine":
+        updated_df = st.data_editor(pd.DataFrame({"Weighted Coefficients": [0.36, 0.49, 0.14, 0.01]}), num_rows="dynamic",
+                    column_config={
+                        "Weighted Coefficients": st.column_config.NumberColumn(
+                            "Weighted Coefficients",
+                            help="Sequence of weighting coefficients. This uses the convention of being centered on the origin, so these will typically all be positive numbers, not alternating sign.",
+                            min_value=0,
+                            max_value=1.0,
+                            format="plain",
+                        )},
+                    hide_index=True,
+                    key="window-window_general_cosine_coef",
+                    )
+        st.session_state["window-window_general_cosine_coef_df"] = updated_df
+    elif window == "general gaussian":
+        st.slider("Shape Parameter", min_value=0.0, value=0.5, max_value=1.0, key="window-window_general_gaussian_p")
+        st.number_input("Standard Deviation", value=10, key="window-window_general_gaussian_std")
+    elif window == "general hamming":
+        st.slider("Window Coefficient", min_value=0.0, value=0.5, max_value=1.0, key="window-window_general_hamming_alpha")
+    elif window in ["kaiser bessel derived", "kaiser"]:
+        st.slider("Shape Parameter", min_value=0.0, value=0.5, max_value=1.0, key="window-window_kaiser_beta")
+    elif window == "taylor":
+        st.number_input("Adjacent Side-lobes", key="window-window_taylor_nbar")
+        st.number_input("Suppression Level (dB)", key="window-window_taylor_sll")
+        st.checkbox("Normalize", value=True, key="window-window_taylor_norm")
+    elif window == "tukey":
+        st.slider("Shape Parameter", min_value=0.0, value=0.5, max_value=1.0, key="window-window_tukey_alpha")
+
+def _render_options_window():
+    """
+
+    """
+    # default values
+    if "window-numtaps" not in st.session_state:
+        st.session_state["window-numtaps"] = 29
+    if "window-width" not in st.session_state:
+        st.session_state["window-width"] = 0.0001
+    if "window-window" not in st.session_state:
+        st.session_state["window-window"] = 'hamming'
+    if "window-pass_zero" not in st.session_state:
+        st.session_state["window-pass_zero"] = False
+    if "window-scale" not in st.session_state:
+        st.session_state["window-scale"] = False
+    if "window-fs" not in st.session_state:
+        st.session_state["window-fs"] = 1000
+
+    st.slider("Number of taps", min_value=1, max_value=128, value=29, step=1, key="window-numtaps",
+                help= "Length of the filter (number of coefficients, i.e., the filter order + 1)"+\
+                    ". numtaps must be odd if a passband includes the Nyquist frequency.")
+
+    updated_df = st.data_editor(pd.DataFrame({"Frequencies": [100.0, 200.0, 300.0, 400.0]}), num_rows="dynamic",
+                    column_config={
+                        "Frequencies": st.column_config.NumberColumn(
+                            "Frequency (Hz)",
+                            help="Must be between 0 and Nyquist, and strictly increasing.",
+                            min_value=0.0001,
+                            max_value=st.session_state.get("window-fs")-0.0001,
+                            format="engineering",
+                        )},
+                    hide_index=True,
+                    key="window-cutoff",
+                    )
+    st.session_state["window-df"] = updated_df
+
+    st.checkbox("Transition Width", value=False, key='window-width_checkbox')
+    st.slider("Transition Width",
+                min_value=0.0001,
+                max_value=st.session_state.get("window-fs")/2-0.0001,
+                value=0.0001,
+                disabled=not st.session_state.get("window-width_checkbox"),
+                key="window-width",
+                label_visibility="hidden")
+    
+    __render_options_window_window()
+    
+    st.checkbox("Pass Zero (DC)", value=False, key='window-pass_zero')
+    st.checkbox("Scale Coefficients", value=False, key='window-scale')
+    st.number_input("Sample Frequency",
+                    step=int(10**(m.ceil(m.log10(st.session_state.get("window-fs"))/3))), value=1000, key="window-fs")
+
 def render_options(border=True, height="stretch", width="stretch"):
     """Renders options selection."""
     with st.container(border=border, height=height, width=width):
         st.subheader("Options")
         dm = st.session_state.get("design-method")
         if dm == "Window":
-            # default values
-            if "window-numtaps" not in st.session_state:
-                st.session_state["window-numtaps"] = 29
-            if "window-width" not in st.session_state:
-                st.session_state["window-width"] = 0.0001
-            if "window-window" not in st.session_state:
-                st.session_state["window-window"] = 'hamming'
-            if "window-pass_zero" not in st.session_state:
-                st.session_state["window-pass_zero"] = False
-            if "window-scale" not in st.session_state:
-                st.session_state["window-scale"] = False
-            if "window-fs" not in st.session_state:
-                st.session_state["window-fs"] = 1000
-
-            st.slider("Number of taps", min_value=1, max_value=128, value=29, step=1, key="window-numtaps",
-                      help= "Length of the filter (number of coefficients, i.e., the filter order + 1)"+\
-                            ". numtaps must be odd if a passband includes the Nyquist frequency.")
-
-            updated_df = st.data_editor(pd.DataFrame({"Frequencies": [100.0, 200.0, 300.0, 400.0]}), num_rows="dynamic",
-                           column_config={
-                                "Frequencies": st.column_config.NumberColumn(
-                                    "Frequency (Hz)",
-                                    help="Must be between 0 and Nyquist, and strictly increasing.",
-                                    min_value=0.0001,
-                                    max_value=st.session_state.get("window-fs")-0.0001,
-                                    format="engineering",
-                                )},
-                            hide_index=True,
-                            key="window-cutoff",
-                            )
-            st.session_state["window-df"] = updated_df
-
-            st.checkbox("Transition Width", value=False, key='window-width_checkbox')
-            st.slider("Transition Width",
-                      min_value=0.0001,
-                      max_value=st.session_state.get("window-fs")/2-0.0001,
-                      value=0.0001,
-                      disabled=not st.session_state.get("window-width_checkbox"),
-                      key="window-width",
-                      label_visibility="hidden")
-    
-            st.checkbox("Pass Zero (DC)", value=False, key='window-pass_zero')
-            st.checkbox("Scale Coefficients", value=False, key='window-scale')
-            st.number_input("Sample Frequency",
-                            step=int(10**(m.ceil(m.log10(st.session_state.get("window-fs"))/3))), value=1000, key="window-fs")
+            _render_options_window()
         elif dm == "Frequency Samping":
             pass
         elif dm == "Least Squares":

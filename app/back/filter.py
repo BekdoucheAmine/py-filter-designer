@@ -1,8 +1,13 @@
-from scipy.signal import firwin, firwin2, firls, remez, kaiser_atten, kaiser_beta
+from math import ceil, log
+
+from scipy.signal import firls, remez, kaiser_atten, kaiser_beta
 from scipy.signal._arraytools import _validate_fs
 from scipy.signal.windows import get_window, general_cosine
 from scipy._lib._array_api import array_namespace, xp_size, xp_default_dtype
+from scipy.fft import irfft
+
 import scipy._lib.array_api_extra as xpx
+import numpy as np
 
 class filter:
     """
@@ -20,7 +25,7 @@ class filter:
         if f_name == "Window":
             self.f = self._firwin
         elif f_name == "Frequency Sampling":
-            self.f = firwin2
+            self.f = self._firwin2
         elif f_name == "Least Squares":
             self.f = firls
         elif f_name == "Equiripple/Minimax":
@@ -45,7 +50,7 @@ class filter:
                 "numtaps": param[0],
                 "freq": param[1],
                 "gain": param[2],
-                "nfreq": param[3],
+                "nfreqs": param[3],
                 "window": param[4],
                 "antisymmetric": param[5],
                 "fs": param[6]
@@ -173,6 +178,113 @@ class filter:
             h /= s
 
         return h
+    def _firwin2(self, numtaps, freq, gain, *, nfreqs=None, window='hamming',
+                antisymmetric=False, fs=None):
+        """
+            this is a local copy of firwin that fixes the issue of general cosine
+        """
+        xp = array_namespace(freq, gain)
+        freq, gain = xp.asarray(freq), xp.asarray(gain)
+
+        fs = _validate_fs(fs, allow_none=True)
+        fs = 2 if fs is None else fs
+        nyq = 0.5 * fs
+
+        if freq.shape[0] != gain.shape[0]:
+            raise ValueError('freq and gain must be of same length.')
+
+        if nfreqs is not None and numtaps >= nfreqs:
+            raise ValueError(
+                f'ntaps must be less than nfreqs, but firwin2 was called with '
+                f'ntaps={numtaps} and nfreqs={nfreqs}'
+            )
+
+        if freq[0] != 0 or freq[-1] != nyq:
+            raise ValueError('freq must start with 0 and end with fs/2.')
+        d = freq[1:] - freq[:-1]
+        if xp.any(d < 0):
+            raise ValueError('The values in freq must be nondecreasing.')
+        d2 = d[:-1] + d[1:]
+        if xp.any(d2 == 0):
+            raise ValueError('A value in freq must not occur more than twice.')
+        if freq[1] == 0:
+            raise ValueError('Value 0 must not be repeated in freq')
+        if freq[-2] == nyq:
+            raise ValueError('Value fs/2 must not be repeated in freq')
+
+        if antisymmetric:
+            if numtaps % 2 == 0:
+                ftype = 4
+            else:
+                ftype = 3
+        else:
+            if numtaps % 2 == 0:
+                ftype = 2
+            else:
+                ftype = 1
+
+        if ftype == 2 and gain[-1] != 0.0:
+            raise ValueError("A Type II filter must have zero gain at the "
+                            "Nyquist frequency.")
+        elif ftype == 3 and (gain[0] != 0.0 or gain[-1] != 0.0):
+            raise ValueError("A Type III filter must have zero gain at zero "
+                            "and Nyquist frequencies.")
+        elif ftype == 4 and gain[0] != 0.0:
+            raise ValueError("A Type IV filter must have zero gain at zero "
+                            "frequency.")
+
+        if nfreqs is None:
+            nfreqs = 1 + 2 ** int(ceil(log(numtaps, 2)))
+
+        if xp.any(d == 0):
+            # Tweak any repeated values in freq so that interp works.
+            freq = xp.asarray(freq, copy=True)
+            eps = xp.finfo(xp_default_dtype(xp)).eps * nyq
+            for k in range(freq.shape[0] - 1):
+                if freq[k] == freq[k + 1]:
+                    freq[k] = freq[k] - eps
+                    freq[k + 1] = freq[k + 1] + eps
+            # Check if freq is strictly increasing after tweak
+            d = freq[1:] - freq[:-1]
+            if xp.any(d <= 0):
+                raise ValueError("freq cannot contain numbers that are too close "
+                                "(within eps * (fs/2): "
+                                f"{eps}) to a repeated value")
+
+        # Linearly interpolate the desired response on a uniform mesh `x`.
+        x = np.linspace(0.0, nyq, nfreqs)
+        fx = np.interp(x, np.asarray(freq), np.asarray(gain))  # XXX array-api-extra#193
+        x = xp.asarray(x)
+        fx = xp.asarray(fx)
+
+        # Adjust the phases of the coefficients so that the first `ntaps` of the
+        # inverse FFT are the desired filter coefficients.
+        shift = xp.exp(-(numtaps - 1) / 2. * 1j * xp.pi * x / nyq)
+        if ftype > 2:
+            shift *= 1j
+
+        fx2 = fx * shift
+
+        # Use irfft to compute the inverse FFT.
+        out_full = irfft(fx2)
+
+        if window is not None:
+            # Create the window to apply to the filter coefficients.
+            if window[0] == "general cosine":
+                wind = general_cosine(numtaps, window[1], sym=True)
+            else:
+                wind = get_window(window, numtaps, fftbins=False, xp=xp)
+        else:
+            wind = 1
+
+        # Keep only the first `numtaps` coefficients in `out`, and multiply by
+        # the window.
+        out = out_full[:numtaps] * wind
+
+        if ftype == 3:
+            out[xp_size(out) // 2] = 0.0
+
+        return out
     def get_taps(self):
         """
         """
@@ -188,10 +300,10 @@ class filter:
             return self.f(self.param["numtaps"],
                           self.param["freq"],
                           self.param["gain"],
-                          self.param["nfreqs"],
-                          self.param["window"],
-                          self.param["antisymmetric"],
-                          self.param["fs"])
+                          nfreqs=self.param["nfreqs"],
+                          window=self.param["window"],
+                          antisymmetric=self.param["antisymmetric"],
+                          fs=self.param["fs"])
         elif self.f_name == "Least Squares":
             return self.f(self.param["numtaps"],
                           self.param["bands"],
